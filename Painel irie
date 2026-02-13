@@ -1,0 +1,187 @@
+-- [[ PAINEL URIEL - XENO EXECUTOR PC ]] --
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- Configurações de Estado
+local Flags = {
+    Aimbot = true,
+    WallHack = true,
+    TeamCheck = true,
+    WallCheck = true,
+    DeadCheck = true,
+    ShowFOV = true,
+    Lines = true,
+    FOVSize = 150,
+    Smoothness = 0.9,
+    TargetPart = "Head" -- Padrão: Cabeça
+}
+
+local UrielPurple = Color3.fromRGB(138, 43, 226)
+local DarkBG = Color3.fromRGB(10, 10, 10)
+local PanelBG = Color3.fromRGB(15, 15, 15)
+
+-- Interface Principal
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.Name = "PainelUriel_PC"
+ScreenGui.ResetOnSpawn = false
+
+-- Botão de Toggle 👷
+local ToggleBtn = Instance.new("TextButton", ScreenGui)
+ToggleBtn.Size = UDim2.new(0, 40, 0, 40)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 10)
+ToggleBtn.BackgroundColor3 = UrielPurple
+ToggleBtn.Text = "👷"
+ToggleBtn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 8)
+
+-- Frame do Painel (Design da Imagem)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 350, 0, 200) -- Ajustado para o layout horizontal da foto
+MainFrame.Position = UDim2.new(0.5, -175, 0.4, 0)
+MainFrame.BackgroundColor3 = DarkBG
+MainFrame.BorderSizePixel = 0
+
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Size = UDim2.new(1, 0, 0, 25)
+TopBar.BackgroundColor3 = UrielPurple
+TopBar.BorderSizePixel = 0
+
+local Title = Instance.new("TextLabel", TopBar)
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.Text = "PAINEL URIEL V14.1"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 12
+Title.BackgroundTransparency = 1
+
+-- Barra Lateral (Ícones)
+local SideBar = Instance.new("Frame", MainFrame)
+SideBar.Size = UDim2.new(0, 40, 1, -25)
+SideBar.Position = UDim2.new(0, 0, 0, 25)
+SideBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SideBar.BorderSizePixel = 0
+
+local SideLayout = Instance.new("UIListLayout", SideBar)
+SideLayout.Padding = UDim.new(0, 5)
+
+-- Container de Conteúdo
+local Content = Instance.new("Frame", MainFrame)
+Content.Size = UDim2.new(1, -50, 1, -35)
+Content.Position = UDim2.new(0, 45, 0, 30)
+Content.BackgroundTransparency = 1
+
+local ContentLayout = Instance.new("UIGridLayout", Content)
+ContentLayout.CellSize = UDim2.new(0, 140, 0, 25)
+ContentLayout.CellPadding = UDim2.new(0, 10, 0, 5)
+
+-- Função de Botão Estilo Uriel
+local function CreateOption(name, flag)
+    local btn = Instance.new("TextButton", Content)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    btn.Text = name
+    btn.TextColor3 = Flags[flag] and UrielPurple or Color3.new(1,1,1)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 14
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+    btn.MouseButton1Click:Connect(function()
+        Flags[flag] = not Flags[flag]
+        btn.TextColor3 = Flags[flag] and UrielPurple or Color3.new(1,1,1)
+    end)
+end
+
+-- Seletor de Alvo (Cabeça / Tronco)
+local TargetBtn = Instance.new("TextButton", Content)
+TargetBtn.BackgroundColor3 = UrielPurple
+TargetBtn.Text = "Alvo: Cabeça"
+TargetBtn.TextColor3 = Color3.new(1,1,1)
+TargetBtn.Font = Enum.Font.SourceSansBold
+Instance.new("UICorner", TargetBtn).CornerRadius = UDim.new(0, 4)
+
+TargetBtn.MouseButton1Click:Connect(function()
+    if Flags.TargetPart == "Head" then
+        Flags.TargetPart = "UpperTorso" -- Ou "Torso" para R6
+        TargetBtn.Text = "Alvo: Tronco"
+    else
+        Flags.TargetPart = "Head"
+        TargetBtn.Text = "Alvo: Cabeça"
+    end
+end)
+
+-- Criar Opções Baseadas na Imagem
+CreateOption("Ativar Aimbot", "Aimbot")
+CreateOption("Aimbot Visivel", "WallCheck")
+CreateOption("Team Check", "TeamCheck")
+CreateOption("Exibir FOV", "ShowFOV")
+CreateOption("Linhas (Tracers)", "Lines")
+
+-- FOV Circle
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1
+FOVCircle.Color = UrielPurple
+FOVCircle.Filled = false
+
+-- Lógica de Mira Adaptada
+local function GetClosest()
+    local target = nil
+    local dist = Flags.FOVSize
+    
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character then
+            local pChar = v.Character
+            local part = pChar:FindFirstChild(Flags.TargetPart) or pChar:FindFirstChild("HumanoidRootPart")
+            
+            if part then
+                if Flags.TeamCheck and v.Team == LocalPlayer.Team then continue end
+                if Flags.DeadCheck and pChar:FindFirstChild("Humanoid") and pChar.Humanoid.Health <= 0 then continue end
+                
+                local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                if onScreen then
+                    -- Wall Check
+                    if Flags.WallCheck then
+                        local ray = Camera:ViewportPointToRay(pos.X, pos.Y)
+                        local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character, pChar})
+                        if hit then continue end
+                    end
+
+                    local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if mag < dist then
+                        dist = mag
+                        target = part
+                    end
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- Loop de Movimento
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Visible = Flags.ShowFOV
+    FOVCircle.Radius = Flags.FOVSize
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    if Flags.Aimbot and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        local target = GetClosest()
+        if target then
+            local pos = Camera:WorldToViewportPoint(target.Position)
+            local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            mousemoverel((pos.X - center.X) * (1 - Flags.Smoothness), (pos.Y - center.Y) * (1 - Flags.Smoothness))
+        end
+    end
+end)
+
+-- Arrastar Menu
+local dragStart, startPos, dragging
+MainFrame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; dragStart = i.Position; startPos = MainFrame.Position end end)
+UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+    local delta = i.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
