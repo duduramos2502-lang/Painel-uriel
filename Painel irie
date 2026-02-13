@@ -1,69 +1,197 @@
--- [[ PAINEL URIEL V14.1 - FIX 100% FUNCIONAL ]] --
-local P, R, U, C, L = game:GetService("Players"), game:GetService("RunService"), game:GetService("UserInputService"), workspace.CurrentCamera, game:GetService("Players").LocalPlayer
-local F = {A = true, WC = true, T = true, S = true, FS = 150, Sm = 0.85, TP = "Head"} -- Sm menor = Puxada mais forte
-local Y, B = Color3.fromRGB(138, 43, 226), Color3.fromRGB(10, 10, 10)
+-- Script de Aimbot para Roblox (Mobile & PC)
 
--- Interface Minimalista
-local G = Instance.new("ScreenGui", L.PlayerGui); G.Name = "UrielFix"
-local M = Instance.new("Frame", G); M.Size = UDim2.new(0, 350, 0, 180); M.Position = UDim2.new(0.5, -175, 0.4, 0); M.BackgroundColor3 = B; M.BorderSizePixel = 0
-local H = Instance.new("Frame", M); H.Size = UDim2.new(1, 0, 0, 25); H.BackgroundColor3 = Y
-local T = Instance.new("TextLabel", H); T.Size = UDim2.new(1, 0, 1, 0); T.Text = "PAINEL URIEL - 100% FUNCIONAL⚡"; T.TextColor3 = Color3.new(1,1,1); T.BackgroundTransparency = 1; T.TextSize = 12
+-- Configurações Iniciais
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local camera = workspace.CurrentCamera
 
-local CT = Instance.new("Frame", M); CT.Size = UDim2.new(1, -20, 1, -40); CT.Position = UDim2.new(0, 10, 0, 35); CT.BackgroundTransparency = 1
-local GL = Instance.new("UIGridLayout", CT); GL.CellSize = UDim2.new(0, 155, 0, 30); GL.CellPadding = UDim2.new(0, 10, 0, 5)
+-- GUI - Menu Ultra Fino
+local gui = Instance.new("ScreenGui")
+gui.Name = "AimbotGUI"
+gui.Parent = player:WaitForChild("PlayerGui")
 
-local function btn(n, f)
-    local b = Instance.new("TextButton", CT); b.BackgroundColor3 = Color3.fromRGB(25, 25, 25); b.Text = n; b.TextColor3 = F[f] and Y or Color3.new(1,1,1)
-    b.MouseButton1Click:Connect(function() F[f] = not F[f]; b.TextColor3 = F[f] and Y or Color3.new(1,1,1) end)
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 140, 1, 0)
+frame.Position = UDim2.new(0, 0, 0, 0)
+frame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+-- Header
+local header = Instance.new("TextLabel")
+header.Text = "nova geração⚡"
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundTransparency = 1
+header.Font = Enum.Font.SourceSansBold
+header.TextColor3 = Color3.fromRGB(255, 211, 0)
+header.Parent = frame
+
+-- Drag Handle
+local dragHandle = Instance.new("TextButton")
+dragHandle.Text = ""
+dragHandle.Size = UDim2.new(1, 0, 0, 40)
+dragHandle.BackgroundTransparency = 1
+dragHandle.MouseButton1Down:Connect(function()
+    local mousePos = mouse.AbsolutePosition
+    local framePos = frame.AbsolutePosition
+    while mouse.LeftButton == Enum.UserInputState.Begin do wait()
+        frame.Position = UDim2.new(0, framePos.X + (mouse.AbsolutePosition - mousePos).X,
+                                   0, framePos.Y + (mouse.AbsolutePosition - mousePos).Y)
+    end
+end)
+dragHandle.Parent = header
+
+-- Float Button
+local floatButton = Instance.new("TextButton")
+floatButton.Text = "👷"
+floatButton.Size = UDim2.new(0, 30, 0, 30)
+floatButton.Position = UDim2.new(0, 100, 0, 10)
+floatButton.BackgroundTransparency = 1
+floatButton.Font = Enum.Font.SourceSansBold
+floatButton.TextColor3 = Color3.fromRGB(255, 211, 0)
+floatButton.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+end)
+floatButton.Parent = frame
+
+-- FOV TextBox
+local fovBox = Instance.new("TextBox")
+fovBox.PlaceholderText = "FOV"
+fovBox.Size = UDim2.new(0, 120, 0, 20)
+fovBox.Position = UDim2.new(0, 10, 0, 60)
+fovBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+fovBox.TextColor3 = Color3.fromRGB(255, 211, 0)
+fovBox.Font = Enum.Font.SourceSansBold
+fovBox.TextSize = 12
+fovBox.Parent = frame
+
+-- Flags e Botões
+local flags = {
+    aimbot = true,
+    wallHack = true,
+    teamCheck = true,
+    wallCheck = true,
+    deadCheck = true,
+    fov = true,
+    lines = true
+}
+
+local buttons = {}
+
+for i, flag in pairs(flags) do
+    local button = Instance.new("TextButton")
+    button.Text = i
+    button.Size = UDim2.new(0, 120, 0, 20)
+    button.Position = UDim2.new(0, 10, 0, 90 + (i-1)*30)
+    button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    button.TextColor3 = flag and Color3.fromRGB(255, 211, 0) or Color3.fromRGB(100, 100, 100)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 12
+    button.MouseButton1Click:Connect(function()
+        flags[i] = not flags[i]
+        button.TextColor3 = flags[i] and Color3.fromRGB(255, 211, 0) or Color3.fromRGB(100, 100, 100)
+    end)
+    button.Parent = frame
+    buttons[i] = button
 end
 
-local AT = Instance.new("TextButton", CT); AT.BackgroundColor3 = Y; AT.Text = "Alvo: Cabeça"; AT.TextColor3 = Color3.new(1,1,1)
-AT.MouseButton1Click:Connect(function() F.TP = (F.TP == "Head" and "HumanoidRootPart" or "Head"); AT.Text = "Alvo: "..(F.TP == "Head" and "Cabeça" or "Tronco") end)
+-- FOV Circle
+local fovCircle = Instance.new("ImageLabel")
+fovCircle.Image = "rbxasset://textures/FOVCircle.png"
+fovCircle.Size = UDim2.new(0, 100, 0, 100)
+fovCircle.Position = UDim2.new(0, 20, 0, 10)
+fovCircle.BackgroundTransparency = 1
+fovCircle.Visible = flags.fov
+fovCircle.Parent = frame
 
-btn("Aimbot (M2)", "A"); btn("Wall Check", "WC"); btn("Team Check", "T"); btn("Exibir FOV", "S")
-
--- Desenho do FOV
-local Cir = Drawing.new("Circle"); Cir.Thickness = 1; Cir.Color = Y; Cir.Visible = true; Cir.Transparency = 1; Cir.Filled = false
-
--- Função de Checagem de Parede (Simplificada para PC)
-local function Visible(t)
-    if not F.WC then return true end
-    local r = C:Raycast(C.CFrame.Position, t.Position - C.CFrame.Position, RaycastParams.new())
-    return not r or r.Instance:IsDescendantOf(t.Parent)
-end
-
--- Busca de Alvo
-local function Get()
-    local target, dist = nil, F.FS
-    for _, v in pairs(P:GetPlayers()) do
-        if v ~= L and v.Character and v.Character:FindFirstChild(F.TP) and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            if F.T and v.Team == L.Team then continue end
-            local p, on = C:WorldToViewportPoint(v.Character[F.TP].Position)
-            if on then
-                local mag = (Vector2.new(p.X, p.Y) - Vector2.new(C.ViewportSize.X/2, C.ViewportSize.Y/2)).Magnitude
-                if mag < dist and Visible(v.Character[F.TP]) then
-                    dist = mag; target = v.Character[F.TP]
+-- Main Loop
+while wait() do
+    if flags.aimbot then
+        local target = nil
+        local closestDistance = math.huge
+        
+        for _, character in ipairs(workspace:GetChildren()) do
+            if character:IsA("Model") and character:FindFirstChild("Humanoid") and character ~= player.Character then
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local screenPos, onScreen = camera:WorldToViewportPoint(head.Position)
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
+                    
+                    if onScreen and distance < closestDistance and (not flags.teamCheck or character.Team ~= player.Team) then
+                        closestDistance = distance
+                        target = head
+                    end
+                end
+            end
+        end
+        
+        if target then
+            local currentMousePos = mouse.Hit.Position
+            local targetPos = target.Position
+            local direction = (targetPos - currentMousePos).unit
+            
+            -- Lerp 0.9 for smooth aim
+            mouse.Hit = RaycastParams.new()
+            mouse.Hit = workspace:Raycast(currentMousePos, direction * 1000, RaycastFilterInfo.new())
+            
+            if mouse.Hit then
+                mouse.Hit = mouse.Hit.Instance
+            end
+        end
+    end
+    
+    if flags.wallHack then
+        for _, character in ipairs(workspace:GetChildren()) do
+            if character:IsA("Model") and character:FindFirstChild("Humanoid") and character ~= player.Character then
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local highlight = character:FindFirstChild("Highlight")
+                    if not highlight then
+                        highlight = Instance.new("Highlight")
+                        highlight.Enabled = true
+                        highlight.FillTransparency = 0.7
+                        highlight.OutlineTransparency = 0.5
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.Parent = head
+                    end
                 end
             end
         end
     end
-    return target
-end
-
--- Loop de Movimento (Forçado para Xeno)
-R.RenderStepped:Connect(function()
-    Cir.Visible = F.S; Cir.Radius = F.FS; Cir.Position = Vector2.new(C.ViewportSize.X/2, C.ViewportSize.Y/2)
-    if F.A and U:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        local t = Get()
-        if t then
-            local p = C:WorldToViewportPoint(t.Position)
-            local ScreenCenter = Vector2.new(C.ViewportSize.X/2, C.ViewportSize.Y/2)
-            local AimPos = Vector2.new(p.X, p.Y)
-            -- Movimento Relativo com Sensibilidade Ajustada para Xeno
-            mousemoverel((AimPos.X - ScreenCenter.X) * (1 - F.Sm), (AimPos.Y - ScreenCenter.Y) * (1 - F.Sm))
+    
+    if flags.lines then
+        for _, character in ipairs(workspace:GetChildren()) do
+            if character:IsA("Model") and character:FindFirstChild("Humanoid") and character ~= player.Character then
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local line = character:FindFirstChild("Line")
+                    if not line then
+                        line = Instance.new("Beam")
+                        line.Enabled = true
+                        line.Attachment0 = Attachment.new(head)
+                        line.Attachment1 = Attachment.new(mouse.Hit)
+                        line.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
+                        line.Width = 2
+                        line.Parent = character
+                    else
+                        line.Attachment1 = Attachment.new(mouse.Hit)
+                    end
+                end
+            end
         end
     end
-end)
-
--- Botão de Abrir/Fechar
-local TG = Instance.new("TextButton", G); TG.Size = UDim2.new(0, 35, 0, 35); TG.Position = UDim2.new(0, 10, 0, 10); TG.Text = "👷"; TG.BackgroundColor3 = Y; TG.MouseButton1Click:Connect(function() M.Visible = not M.Visible end)
+    
+    if flags.deadCheck then
+        for _, character in ipairs(workspace:GetChildren()) do
+            if character:IsA("Model") and character:FindFirstChild("Humanoid") and character ~= player.Character then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid.Health <= 0 then
+                    local highlight = character:FindFirstChild("Highlight")
+                    if highlight then
+                        highlight.Enabled = false
+                    end
+                end
+            end
+        end
+    end
+end
